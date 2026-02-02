@@ -90,7 +90,9 @@ app.get("/get-pump-fun-tokens", async (req, res) => {
 // =======================
 // START SERVER
 // =======================
-app.listen(PORT, () => {
-  console.log(`🔥 Pump Proxy running on http://localhost:${PORT}`);
-  console.log(`➡️  Endpoint: /get-pump-fun-tokens`);
-});
+// app.listen(PORT, () => {
+//   console.log(`🔥 Pump Proxy running on http://localhost:${PORT}`);
+//   console.log(`➡️  Endpoint: /get-pump-fun-tokens`);
+// });
+
+module.exports = app
