@@ -1,29 +1,15 @@
-import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const app = express();
 
 // =======================
 // CONFIG
 // =======================
-const PORT = process.env.PORT || 3001;
 const CACHE_TTL = Number(process.env.CACHE_TTL) || 10000;
 
 const PUMP_URL =
   "https://frontend-api-v3.pump.fun/coins/for-you?offset=0&limit=100&includeNsfw=true";
 
 // =======================
-// MIDDLEWARE
-// =======================
-app.use(cors());
-app.use(express.json());
-
-// =======================
-// SIMPLE CACHE
+// SIMPLE CACHE (IN-MEMORY)
 // =======================
 let cache = null;
 let lastFetch = 0;
@@ -40,17 +26,31 @@ function setCache(data) {
 }
 
 // =======================
-// ROUTES
+// SERVERLESS HANDLER
 // =======================
-app.get("/", (req, res) => {
-  res.send("🚀 Pump.fun Proxy is running");
-});
+export default async function handler(req, res) {
+  // Allow CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-app.get("/get-pump-fun-tokens", async (req, res) => {
+  // Handle preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // Root check
+  if (req.method === "GET" && req.url === "/api/pump") {
+    return res.status(200).json({
+      status: "ok",
+      message: "🚀 Pump.fun Proxy is running"
+    });
+  }
+
   try {
     const cached = getCache();
     if (cached) {
-      return res.json({
+      return res.status(200).json({
         cached: true,
         count: cached.length || 0,
         data: cached
@@ -74,23 +74,15 @@ app.get("/get-pump-fun-tokens", async (req, res) => {
     const data = await response.json();
     setCache(data);
 
-    res.json({
+    return res.status(200).json({
       cached: false,
       count: data.length || 0,
       data
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       error: "Failed to fetch Pump.fun tokens",
       message: err.message
     });
   }
-});
-
-// =======================
-// START SERVER
-// =======================
-app.listen(PORT, () => {
-  console.log(`🔥 Pump Proxy running on http://localhost:${PORT}`);
-  console.log(`➡️  Endpoint: /get-pump-fun-tokens`);
-});
+}
